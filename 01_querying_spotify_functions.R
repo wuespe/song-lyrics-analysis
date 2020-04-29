@@ -95,7 +95,7 @@ download_artist_song_lyrics = function(q, artist_id = NULL) {
     fields_from_response = c("name", "genres", "followers.total", "uri", "images.url")
     stop_for_status(result)
     
-    wynik = content(test) %>% unlist %>% .[fields_from_response] %>% as.list %>% do.call(data.table, .)
+    wynik = content(result) %>% unlist %>% .[fields_from_response] %>% as.list %>% do.call(data.table, .)
     wynik[, `:=`(followers.total = as.integer(followers.total),
                  artist_uri = uri,
                  artist_id = sub("spotify:artist:", "", uri),
@@ -112,7 +112,7 @@ download_artist_song_lyrics = function(q, artist_id = NULL) {
   search_query_url = "https://api.spotify.com/v1/artists/" %||% artist_DT$artist_id %||% "/albums"
   result =  GET(url = search_query_url,
                 add_headers(Authorization = paste0("Bearer ", access_token)),
-                query = list(market = "PL"),
+                query = list(country = "PL", limit = 50),
                 content_type_json(),
                 accept_json(),
                 verbose(info = TRUE, ssl = TRUE)
