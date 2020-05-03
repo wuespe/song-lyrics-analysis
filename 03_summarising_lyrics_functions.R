@@ -116,6 +116,7 @@ join_and_ded = function(dt_songs, verbose = TRUE) {
   system.time({
     fill_least_freq(dt_songs_j, verbose)
   })
+  dt_songs_j[, bases_list := NULL]
   dt_songs_j
 }
 
