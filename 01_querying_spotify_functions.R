@@ -92,10 +92,11 @@ download_artist_song_lyrics = function(q, artist_id = NULL) {
                   verbose(info = TRUE, ssl = TRUE)
     )
     
-    fields_from_response = c("name", "genres", "followers.total", "uri", "images.url")
+    fields_from_response = c("name", "genres", "genres1", "genres2", "genres3", "followers.total", "uri", "images.url")
     stop_for_status(result)
     
     wynik = content(result) %>% unlist %>% .[fields_from_response] %>% as.list %>% do.call(data.table, .)
+    wynik[, genres := do.call(paste, c(.SD, sep = "; ")), .SDcols = patterns("genres")]
     wynik[, `:=`(followers.total = as.integer(followers.total),
                  artist_uri = uri,
                  artist_id = sub("spotify:artist:", "", uri),
@@ -187,3 +188,31 @@ download_artist_song_lyrics = function(q, artist_id = NULL) {
 
 # tmp = download_artist_song_lyrics(q = "Łona i Webber")
 # tmp2 = download_artist_song_lyrics(artist_id = "6DMuRVdgTNmZCYRlekKWvO")
+
+#### get albums' metadata ----
+# access_token - must be available in environment
+
+get_albums_data = function(album_ids) {
+  search_query_url = "https://api.spotify.com/v1/albums/"
+  
+  # send in batches of up to 20 albums
+  album_ids_list = split(album_ids, seq_along(album_ids) %/% 20)
+  
+  wynik_list = lapply(album_ids_list, function(album_ids) {
+    result =  GET(url = search_query_url,
+                  add_headers(Authorization = paste0("Bearer ", access_token)),
+                  query = list(market = "PL", ids = paste0(album_ids, collapse = ",")),
+                  content_type_json(),
+                  accept_json(),
+                  verbose(info = TRUE, ssl = TRUE)
+    )
+    
+    result = content(result)$albums
+    
+    fields_from_response = c("id", "name", "label", "popularity", "release_date", "images.url")
+    wynik = result %>% lapply(. %>% unlist %>% .[fields_from_response]) %>% do.call(rbind, .) %>% data.table %>% setnames(fields_from_response)
+    wynik
+  })
+  
+  rbindlist(wynik_list)
+}
